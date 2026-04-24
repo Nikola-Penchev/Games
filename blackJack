@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blackjack</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #1a5c2a;
+    background-image: radial-gradient(ellipse at center, #1e6b30 0%, #0d3318 100%);
+    font-family: 'Georgia', serif;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+    user-select: none;
+  }
+  h1 { font-size: 1.8rem; letter-spacing: 4px; text-transform: uppercase; color: #f5c842; text-shadow: 0 0 10px #f5c84288; margin-bottom: 4px; }
+  .balance { font-size: 1rem; color: #ccc; margin-bottom: 16px; }
+  .balance span { color: #f5c842; font-weight: bold; }
+
+  .area { width: 100%; max-width: 560px; }
+  .label { font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; color: #aed6a0; margin-bottom: 6px; }
+  .score { font-size: 1rem; color: #fff; margin-bottom: 10px; min-height: 22px; }
+  .score span { color: #f5c842; font-weight: bold; }
+
+  .hand {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 100px;
+    margin-bottom: 14px;
+  }
+
+  .card {
+    width: 62px;
+    height: 90px;
+    border-radius: 8px;
+    background: #fff;
+    color: #111;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 5px;
+    font-size: 1rem;
+    font-weight: bold;
+    box-shadow: 2px 3px 8px #0006;
+    position: relative;
+    flex-shrink: 0;
+    animation: dealCard 0.25s ease-out;
+  }
+  @keyframes dealCard {
+    from { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
+  }
+  .card.red { color: #cc1111; }
+  .card .top { font-size: 0.85rem; line-height: 1; }
+  .card .suit { font-size: 1.3rem; text-align: center; }
+  .card .bot { font-size: 0.85rem; line-height: 1; text-align: right; transform: rotate(180deg); }
+  .card.back {
+    background: linear-gradient(135deg, #1a3a8a 25%, #122870 25%, #122870 50%, #1a3a8a 50%, #1a3a8a 75%, #122870 75%);
+    background-size: 14px 14px;
+    border: 2px solid #fff3;
+  }
+
+  .divider { border: none; border-top: 1px solid #ffffff22; margin: 4px 0 16px; }
+
+  /* Betting */
+  .bet-area { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; align-items: center; }
+  .chip {
+    width: 52px; height: 52px; border-radius: 50%;
+    border: 3px dashed #fff8;
+    font-weight: bold; font-size: 0.8rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.1s, box-shadow 0.1s;
+    box-shadow: 0 3px 6px #0005;
+  }
+  .chip:hover { transform: scale(1.1); box-shadow: 0 4px 12px #0008; }
+  .chip:active { transform: scale(0.95); }
+  .chip.c5   { background: #e03030; }
+  .chip.c10  { background: #2255cc; }
+  .chip.c25  { background: #228833; }
+  .chip.c50  { background: #cc7700; }
+  .chip.c100 { background: #8822aa; }
+
+  .current-bet { margin-left: 4px; font-size: 0.95rem; color: #ccc; }
+  .current-bet span { color: #f5c842; font-weight: bold; }
+
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  button {
+    padding: 10px 20px;
+    border: none; border-radius: 6px;
+    font-size: 0.95rem; font-family: inherit;
+    cursor: pointer; font-weight: bold;
+    transition: filter 0.15s, transform 0.1s;
+    box-shadow: 0 2px 6px #0005;
+  }
+  button:hover { filter: brightness(1.15); }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.35; cursor: not-allowed; filter: none; transform: none; }
+
+  .btn-deal   { background: #f5c842; color: #111; }
+  .btn-hit    { background: #3a9e4f; color: #fff; }
+  .btn-stand  { background: #c0392b; color: #fff; }
+  .btn-double { background: #2980b9; color: #fff; }
+  .btn-clear  { background: #555; color: #fff; }
+
+  .message {
+    min-height: 40px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-align: center;
+    padding: 8px;
+    border-radius: 8px;
+    background: #00000033;
+    color: #f5c842;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+<h1>♠ Blackjack ♥</h1>
+<div class="balance">Баланс: <span id="bal">1000</span> лв.</div>
+
+<div class="area">
+  <div class="label">Дилър</div>
+  <div class="score" id="dScore"></div>
+  <div class="hand" id="dHand"></div>
+  <hr class="divider">
+  <div class="label">Ти</div>
+  <div class="score" id="pScore"></div>
+  <div class="hand" id="pHand"></div>
+
+  <div class="message" id="msg">Залог → Раздай</div>
+
+  <div class="bet-area">
+    <div class="chip c5"   onclick="addBet(5)">5</div>
+    <div class="chip c10"  onclick="addBet(10)">10</div>
+    <div class="chip c25"  onclick="addBet(25)">25</div>
+    <div class="chip c50"  onclick="addBet(50)">50</div>
+    <div class="chip c100" onclick="addBet(100)">100</div>
+    <div class="current-bet">Залог: <span id="betAmt">0</span> лв.</div>
+  </div>
+
+  <div class="btns">
+    <button class="btn-deal"   id="btnDeal"   onclick="deal()"   disabled>Раздай</button>
+    <button class="btn-hit"    id="btnHit"    onclick="hit()"    disabled>Карта</button>
+    <button class="btn-stand"  id="btnStand"  onclick="stand()"  disabled>Стой</button>
+    <button class="btn-double" id="btnDouble" onclick="dbl()"    disabled>Двойно</button>
+    <button class="btn-clear"  id="btnClear"  onclick="clearBet()">Изчисти</button>
+  </div>
+</div>
+
+<script>
+const SUITS = ['♠','♥','♦','♣'];
+const VALS  = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const RED   = ['♥','♦'];
+
+let deck=[], dHand=[], pHand=[], balance=1000, bet=0, gameOn=false;
+
+function buildDeck(){
+  deck=[];
+  for(let s of SUITS) for(let v of VALS) deck.push({s,v});
+  // shuffle
+  for(let i=deck.length-1;i>0;i--){
+    let j=Math.floor(Math.random()*(i+1));
+    [deck[i],deck[j]]=[deck[j],deck[i]];
+  }
+}
+
+function cardVal(v){ if(['J','Q','K'].includes(v))return 10; if(v==='A')return 11; return parseInt(v); }
+
+function handScore(hand){
+  let s=0, aces=0;
+  for(let c of hand){ s+=cardVal(c.v); if(c.v==='A')aces++; }
+  while(s>21&&aces>0){ s-=10; aces--; }
+  return s;
+}
+
+function renderCard(c, hidden=false){
+  const div=document.createElement('div');
+  if(hidden){ div.className='card back'; return div; }
+  div.className='card'+(RED.includes(c.s)?' red':'');
+  div.innerHTML=`<div class="top">${c.v}<br>${c.s}</div><div class="suit">${c.s}</div><div class="bot">${c.v}<br>${c.s}</div>`;
+  return div;
+}
+
+function renderHands(hideDealer=true){
+  const dEl=document.getElementById('dHand');
+  const pEl=document.getElementById('pHand');
+  dEl.innerHTML=''; pEl.innerHTML='';
+  dHand.forEach((c,i)=>{ dEl.appendChild(renderCard(c, hideDealer&&i===1)); });
+  pHand.forEach(c=>{ pEl.appendChild(renderCard(c)); });
+  document.getElementById('pScore').innerHTML='Точки: <span>'+handScore(pHand)+'</span>';
+  if(hideDealer){
+    document.getElementById('dScore').innerHTML='Точки: <span>'+cardVal(dHand[0].v)+'</span>+?';
+  } else {
+    document.getElementById('dScore').innerHTML='Точки: <span>'+handScore(dHand)+'</span>';
+  }
+}
+
+function setMsg(t){ document.getElementById('msg').textContent=t; }
+function setBal(){ document.getElementById('bal').textContent=balance; }
+function setBet(){ document.getElementById('betAmt').textContent=bet; }
+
+function addBet(n){
+  if(gameOn)return;
+  if(bet+n>balance){ setMsg('Недостатъчен баланс!'); return; }
+  bet+=n; setBet();
+  document.getElementById('btnDeal').disabled=false;
+  setMsg('Залог: '+bet+' лв. → Раздай');
+}
+
+function clearBet(){
+  if(gameOn)return;
+  bet=0; setBet();
+  document.getElementById('btnDeal').disabled=true;
+  setMsg('Залог → Раздай');
+}
+
+function setActionBtns(on){
+  document.getElementById('btnHit').disabled=!on;
+  document.getElementById('btnStand').disabled=!on;
+  document.getElementById('btnDouble').disabled=!on;
+  document.getElementById('btnDeal').disabled=on;
+  document.getElementById('btnClear').disabled=on;
+}
+
+function deal(){
+  if(bet===0)return;
+  buildDeck();
+  dHand=[deck.pop(), deck.pop()];
+  pHand=[deck.pop(), deck.pop()];
+  balance-=bet; setBal();
+  gameOn=true;
+  setActionBtns(true);
+  renderHands(true);
+  // Check BJ
+  if(handScore(pHand)===21){
+    endGame(true);
+  } else {
+    setMsg('Карта, Стой или Двойно?');
+  }
+}
+
+function hit(){
+  pHand.push(deck.pop());
+  renderHands(true);
+  document.getElementById('btnDouble').disabled=true;
+  if(handScore(pHand)>21){ endGame(false,'bust'); }
+  else if(handScore(pHand)===21){ stand(); }
+  else setMsg('Карта или Стой?');
+}
+
+function stand(){
+  // dealer plays
+  while(handScore(dHand)<17) dHand.push(deck.pop());
+  endGame(false);
+}
+
+function dbl(){
+  if(bet>balance){ setMsg('Недостатъчен баланс за удвояване!'); return; }
+  balance-=bet; bet*=2; setBal(); setBet();
+  pHand.push(deck.pop());
+  renderHands(true);
+  if(handScore(pHand)>21){ endGame(false,'bust'); }
+  else stand();
+}
+
+function endGame(checkBJ=false, reason=''){
+  gameOn=false;
+  renderHands(false);
+  setActionBtns(false);
+  document.getElementById('btnDeal').disabled=true;
+
+  const p=handScore(pHand), d=handScore(dHand);
+  let msg='', win=0;
+
+  if(reason==='bust'){
+    msg='💥 Прегоряхте! Загуба.';
+  } else if(checkBJ && p===21 && dHand.length===2 && handScore(dHand)===21){
+    msg='🤝 Двама с Blackjack — равна!';
+    win=bet;
+  } else if(checkBJ && p===21){
+    win=Math.floor(bet*2.5);
+    msg='🎉 BLACKJACK! +'+win+' лв.';
+  } else if(d>21){
+    win=bet*2;
+    msg='🎊 Дилърът прегоря! +'+win+' лв.';
+  } else if(p>d){
+    win=bet*2;
+    msg='✅ Победа! +'+win+' лв.';
+  } else if(p===d){
+    win=bet;
+    msg='🤝 Равна — залогът се връща.';
+  } else {
+    msg='❌ Дилърът спечели. Загуба.';
+  }
+
+  balance+=win; setBal();
+  setMsg(msg);
+  bet=0; setBet();
+
+  if(balance<=0){
+    setTimeout(()=>{ setMsg('Нямате баланс! Рестарт.'); balance=1000; setBal(); },1200);
+  }
+}
+</script>
+</body>
+</html>
