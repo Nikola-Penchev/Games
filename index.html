@@ -17,15 +17,27 @@
     align-items: center;
     padding: 16px;
     user-select: none;
+    overflow-x: hidden;
   }
   h1 { font-size: 1.8rem; letter-spacing: 4px; text-transform: uppercase; color: #f5c842; text-shadow: 0 0 10px #f5c84288; margin-bottom: 4px; }
-  .balance { font-size: 1rem; color: #ccc; margin-bottom: 16px; }
-  .balance span { color: #f5c842; font-weight: bold; }
+  .balance { font-size: 1rem; color: #ccc; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .balance span { color: #f5c842; font-weight: bold; transition: color 0.3s; }
+  .balance span.up   { color: #6dff7d; }
+  .balance span.down { color: #ff6b6b; }
+  .sound-btn { padding: 4px 10px; background: #0004; color: #fff; font-size: 0.9rem; box-shadow: none; }
 
-  .area { width: 100%; max-width: 560px; }
+  .area { position: relative; width: 100%; max-width: 560px; }
   .label { font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; color: #aed6a0; margin-bottom: 6px; }
   .score { font-size: 1rem; color: #fff; margin-bottom: 10px; min-height: 22px; }
-  .score span { color: #f5c842; font-weight: bold; }
+  .score span { color: #f5c842; font-weight: bold; display: inline-block; }
+  .bump { animation: bump 0.3s ease-out; }
+  @keyframes bump { 50% { transform: scale(1.45); } }
+
+  /* Shoe (deck the cards are dealt from) */
+  .shoe { position: absolute; top: 0; right: 0; width: 62px; height: 90px; }
+  .shoe div { position: absolute; inset: 0; border-radius: 8px; box-shadow: 1px 2px 4px #0006; }
+  .shoe div:nth-child(1) { transform: translate(4px, 4px); }
+  .shoe div:nth-child(2) { transform: translate(2px, 2px); }
 
   .hand {
     display: flex;
@@ -34,11 +46,34 @@
     min-height: 100px;
     margin-bottom: 14px;
   }
+  #dHand { padding-right: 76px; }
 
   .card {
     width: 62px;
     height: 90px;
+    flex-shrink: 0;
+    perspective: 600px;
+    position: relative;
+    transition: transform 0.15s;
+  }
+  .hand .card:hover { transform: translateY(-6px) rotate(-2deg); }
+  .card .inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.45s cubic-bezier(.3,.7,.4,1);
+  }
+  .card.down .inner { transform: rotateY(180deg); }
+  .face {
+    position: absolute;
+    inset: 0;
     border-radius: 8px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    box-shadow: 2px 3px 8px #0006;
+  }
+  .front {
     background: #fff;
     color: #111;
     display: flex;
@@ -47,48 +82,64 @@
     padding: 5px;
     font-size: 1rem;
     font-weight: bold;
-    box-shadow: 2px 3px 8px #0006;
-    position: relative;
-    flex-shrink: 0;
-    animation: dealCard 0.25s ease-out;
+    transition: background 0.3s;
   }
-  @keyframes dealCard {
-    from { transform: scale(0.5) rotate(-10deg); opacity: 0; }
-    to { transform: scale(1) rotate(0); opacity: 1; }
-  }
-  .card.red { color: #cc1111; }
-  .card .top { font-size: 0.85rem; line-height: 1; }
-  .card .suit { font-size: 1.3rem; text-align: center; }
-  .card .bot { font-size: 0.85rem; line-height: 1; text-align: right; transform: rotate(180deg); }
-  .card.back {
+  .card.red .front { color: #cc1111; }
+  .front .top { font-size: 0.85rem; line-height: 1; }
+  .front .suit { font-size: 1.3rem; text-align: center; }
+  .front .bot { font-size: 0.85rem; line-height: 1; text-align: right; transform: rotate(180deg); }
+  .back, .shoe div {
     background: linear-gradient(135deg, #1a3a8a 25%, #122870 25%, #122870 50%, #1a3a8a 50%, #1a3a8a 75%, #122870 75%);
     background-size: 14px 14px;
     border: 2px solid #fff3;
   }
+  .back { transform: rotateY(180deg); }
+
+  /* Round result effects */
+  .hand.glow .front { animation: glow 0.8s ease-in-out infinite alternate; }
+  @keyframes glow {
+    from { box-shadow: 0 0 6px #f5c842, 2px 3px 8px #0006; }
+    to   { box-shadow: 0 0 22px 5px #f5c842, 2px 3px 8px #0006; }
+  }
+  .hand.shake { animation: shake 0.5s; }
+  @keyframes shake {
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(4px); }
+  }
+  .hand.bust .front { background: #ffd6d6; }
 
   .divider { border: none; border-top: 1px solid #ffffff22; margin: 4px 0 16px; }
 
   /* Betting */
   .bet-area { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; align-items: center; }
+  .rack { display: flex; flex-wrap: wrap; gap: 8px; }
+  .rack .chip { transition: transform 0.1s, box-shadow 0.1s, opacity 0.25s; }
+  .rack.off .chip { opacity: 0.4; pointer-events: none; }
   .chip {
     width: 52px; height: 52px; border-radius: 50%;
     border: 3px dashed #fff8;
     font-weight: bold; font-size: 0.8rem;
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    transition: transform 0.1s, box-shadow 0.1s;
     box-shadow: 0 3px 6px #0005;
   }
-  .chip:hover { transform: scale(1.1); box-shadow: 0 4px 12px #0008; }
-  .chip:active { transform: scale(0.95); }
+  .rack .chip:hover { transform: scale(1.1); box-shadow: 0 4px 12px #0008; }
+  .rack .chip:active { transform: scale(0.95); }
   .chip.c5   { background: #e03030; }
   .chip.c10  { background: #2255cc; }
   .chip.c25  { background: #228833; }
   .chip.c50  { background: #cc7700; }
   .chip.c100 { background: #8822aa; }
 
+  .pot { position: relative; width: 56px; height: 56px; border-radius: 50%; border: 2px dashed #ffffff44; margin-left: 4px; }
+  .pot .chip, .chip.fly { width: 44px; height: 44px; font-size: 0.7rem; border-width: 2px; cursor: default; }
+  .pot .chip { position: absolute; left: 4px; }
+  .chip.fly { position: fixed; z-index: 50; pointer-events: none; }
+
   .current-bet { margin-left: 4px; font-size: 0.95rem; color: #ccc; }
-  .current-bet span { color: #f5c842; font-weight: bold; }
+  .current-bet span { color: #f5c842; font-weight: bold; display: inline-block; }
 
   .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
   button {
@@ -96,12 +147,12 @@
     border: none; border-radius: 6px;
     font-size: 0.95rem; font-family: inherit;
     cursor: pointer; font-weight: bold;
-    transition: filter 0.15s, transform 0.1s;
+    transition: filter 0.15s, transform 0.2s, opacity 0.25s;
     box-shadow: 0 2px 6px #0005;
   }
   button:hover { filter: brightness(1.15); }
   button:active { transform: scale(0.97); }
-  button:disabled { opacity: 0.35; cursor: not-allowed; filter: none; transform: none; }
+  button:disabled { opacity: 0.35; cursor: not-allowed; filter: none; transform: scale(0.96); }
 
   .btn-deal   { background: #f5c842; color: #111; }
   .btn-hit    { background: #3a9e4f; color: #fff; }
@@ -120,14 +171,31 @@
     color: #f5c842;
     letter-spacing: 1px;
     margin-bottom: 8px;
+    transition: background 0.3s, color 0.3s;
+  }
+  .message.win  { color: #7dff8a; background: #0a5a1d88; }
+  .message.bj   { color: #f5c842; background: #5a4a0a88; text-shadow: 0 0 12px #f5c842; }
+  .message.lose { color: #ff8080; background: #5a0a0a66; }
+  .message.push { color: #ddd; }
+  .message.pop  { animation: pop 0.4s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes pop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .confetti { position: fixed; top: -14px; width: 8px; height: 12px; border-radius: 2px; z-index: 60; pointer-events: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
   }
 </style>
 </head>
 <body>
 <h1>♠ Blackjack ♥</h1>
-<div class="balance">Баланс: <span id="bal">1000</span> лв.</div>
+<div class="balance">
+  <div>Баланс: <span id="bal">1000</span> лв.</div>
+  <button class="sound-btn" id="btnSound" onclick="toggleSound()" title="Звук">🔊</button>
+</div>
 
 <div class="area">
+  <div class="shoe" id="shoe"><div></div><div></div><div></div></div>
   <div class="label">Дилър</div>
   <div class="score" id="dScore"></div>
   <div class="hand" id="dHand"></div>
@@ -139,11 +207,14 @@
   <div class="message" id="msg">Залог → Раздай</div>
 
   <div class="bet-area">
-    <div class="chip c5"   onclick="addBet(5)">5</div>
-    <div class="chip c10"  onclick="addBet(10)">10</div>
-    <div class="chip c25"  onclick="addBet(25)">25</div>
-    <div class="chip c50"  onclick="addBet(50)">50</div>
-    <div class="chip c100" onclick="addBet(100)">100</div>
+    <div class="rack" id="rack">
+      <div class="chip c5"   onclick="addBet(5, this)">5</div>
+      <div class="chip c10"  onclick="addBet(10, this)">10</div>
+      <div class="chip c25"  onclick="addBet(25, this)">25</div>
+      <div class="chip c50"  onclick="addBet(50, this)">50</div>
+      <div class="chip c100" onclick="addBet(100, this)">100</div>
+    </div>
+    <div class="pot" id="pot"></div>
     <div class="current-bet">Залог: <span id="betAmt">0</span> лв.</div>
   </div>
 
@@ -152,7 +223,7 @@
     <button class="btn-hit"    id="btnHit"    onclick="hit()"    disabled>Карта</button>
     <button class="btn-stand"  id="btnStand"  onclick="stand()"  disabled>Стой</button>
     <button class="btn-double" id="btnDouble" onclick="dbl()"    disabled>Двойно</button>
-    <button class="btn-clear"  id="btnClear"  onclick="clearBet()">Изчисти</button>
+    <button class="btn-clear"  id="btnClear"  onclick="clearBet()" disabled>Изчисти</button>
   </div>
 </div>
 
@@ -161,8 +232,58 @@ const SUITS = ['♠','♥','♦','♣'];
 const VALS  = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 const RED   = ['♥','♦'];
 
-let deck=[], dHand=[], pHand=[], balance=1000, bet=0, gameOn=false;
+const $ = id => document.getElementById(id);
+const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const T = ms => RM ? 0 : ms;
+const sleep = ms => new Promise(r => setTimeout(r, T(ms)));
 
+// phase: 'bet' (placing chips), 'play' (player's turn), 'busy' (animation running, input locked)
+let deck=[], dHand=[], pHand=[], balance=1000, bet=0, phase='bet';
+let holeEl=null, holeHidden=false;
+let potChips=[], potGen=0, shownBal=1000, balAnim=0;
+
+/* ---------- Sound (synthesized, no files) ---------- */
+let muted=false, actx=null;
+try { muted = localStorage.getItem('bj-muted')==='1'; } catch(e) {}
+
+function ac(){
+  if(muted) return null;
+  if(!actx){ try { actx=new (window.AudioContext||window.webkitAudioContext)(); } catch(e) { return null; } }
+  if(actx.state==='suspended') actx.resume();
+  return actx;
+}
+function tone(freq, dur, type='sine', vol=0.15, delay=0){
+  const a=ac(); if(!a) return;
+  const t=a.currentTime+delay, o=a.createOscillator(), g=a.createGain();
+  o.type=type; o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t+dur);
+}
+function noise(dur, vol=0.2, freq=3000){
+  const a=ac(); if(!a) return;
+  const len=Math.floor(a.sampleRate*dur), buf=a.createBuffer(1,len,a.sampleRate), d=buf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*(1-i/len);
+  const src=a.createBufferSource(), f=a.createBiquadFilter(), g=a.createGain();
+  src.buffer=buf; f.type='bandpass'; f.frequency.value=freq; g.gain.value=vol;
+  src.connect(f).connect(g).connect(a.destination); src.start();
+}
+const sfx = {
+  card(){ noise(0.12,0.35,2500); },
+  flip(){ noise(0.06,0.25,4000); },
+  chip(){ tone(1800,0.05,'triangle',0.12); tone(2600,0.04,'triangle',0.08,0.03); },
+  win(){ [523,659,784,1047].forEach((f,i)=>tone(f,0.25,'triangle',0.12,i*0.09)); },
+  bj(){ [523,659,784,1047,1319].forEach((f,i)=>tone(f,0.3,'triangle',0.14,i*0.08)); },
+  lose(){ tone(220,0.35,'sawtooth',0.06); tone(165,0.5,'sawtooth',0.06,0.18); },
+  push(){ tone(440,0.2,'sine',0.1); tone(440,0.2,'sine',0.1,0.22); }
+};
+function toggleSound(){
+  muted=!muted;
+  try { localStorage.setItem('bj-muted', muted?'1':'0'); } catch(e) {}
+  $('btnSound').textContent = muted ? '🔇' : '🔊';
+  sfx.chip();
+}
+
+/* ---------- Game logic ---------- */
 function buildDeck(){
   deck=[];
   for(let s of SUITS) for(let v of VALS) deck.push({s,v});
@@ -182,134 +303,333 @@ function handScore(hand){
   return s;
 }
 
-function renderCard(c, hidden=false){
-  const div=document.createElement('div');
-  if(hidden){ div.className='card back'; return div; }
-  div.className='card'+(RED.includes(c.s)?' red':'');
-  div.innerHTML=`<div class="top">${c.v}<br>${c.s}</div><div class="suit">${c.s}</div><div class="bot">${c.v}<br>${c.s}</div>`;
-  return div;
+/* ---------- Cards ---------- */
+function makeCard(c){
+  const el=document.createElement('div');
+  el.className='card down'+(RED.includes(c.s)?' red':'');
+  el.innerHTML=`<div class="inner"><div class="face front"><div class="top">${c.v}<br>${c.s}</div><div class="suit">${c.s}</div><div class="bot">${c.v}<br>${c.s}</div></div><div class="face back"></div></div>`;
+  return el;
 }
 
-function renderHands(hideDealer=true){
-  const dEl=document.getElementById('dHand');
-  const pEl=document.getElementById('pHand');
-  dEl.innerHTML=''; pEl.innerHTML='';
-  dHand.forEach((c,i)=>{ dEl.appendChild(renderCard(c, hideDealer&&i===1)); });
-  pHand.forEach(c=>{ pEl.appendChild(renderCard(c)); });
-  document.getElementById('pScore').innerHTML='Точки: <span>'+handScore(pHand)+'</span>';
-  if(hideDealer){
-    document.getElementById('dScore').innerHTML='Точки: <span>'+cardVal(dHand[0].v)+'</span>+?';
-  } else {
-    document.getElementById('dScore').innerHTML='Точки: <span>'+handScore(dHand)+'</span>';
+function flip(el){ el.classList.remove('down'); sfx.flip(); }
+
+// Flies a card from the shoe into the hand, then turns it face up.
+async function dealTo(handEl, c, faceUp){
+  const el=makeCard(c);
+  handEl.appendChild(el);
+  const from=$('shoe').getBoundingClientRect(), to=el.getBoundingClientRect();
+  sfx.card();
+  if(!RM){
+    await el.animate([
+      { transform:`translate(${from.left-to.left}px,${from.top-to.top}px) rotate(-25deg)` },
+      { transform:'translate(0,0) rotate(0)' }
+    ], { duration:380, easing:'cubic-bezier(.2,.8,.3,1)' }).finished;
   }
+  if(faceUp){ flip(el); await sleep(200); }
+  return el;
 }
 
-function setMsg(t){ document.getElementById('msg').textContent=t; }
-function setBal(){ document.getElementById('bal').textContent=balance; }
-function setBet(){ document.getElementById('betAmt').textContent=bet; }
+async function giveP(){
+  const c=deck.pop(); pHand.push(c);
+  const el=await dealTo($('pHand'), c, true);
+  updP();
+  return el;
+}
+async function giveD(faceUp){
+  const c=deck.pop(); dHand.push(c);
+  const el=await dealTo($('dHand'), c, faceUp);
+  updD();
+  return el;
+}
 
-function addBet(n){
-  if(gameOn)return;
-  if(bet+n>balance){ setMsg('Недостатъчен баланс!'); return; }
+async function reveal(){
+  if(!holeHidden) return;
+  holeHidden=false;
+  flip(holeEl);
+  await sleep(450);
+  updD();
+}
+
+// Sweeps all cards on the table back to the shoe.
+async function collectCards(){
+  const cards=[...document.querySelectorAll('.hand .card')];
+  if(cards.length){
+    const to=$('shoe').getBoundingClientRect();
+    await Promise.all(cards.map((el,i)=>{
+      const r=el.getBoundingClientRect();
+      el.classList.add('down');
+      return el.animate([
+        { transform:'none', opacity:1 },
+        { transform:`translate(${to.left-r.left}px,${to.top-r.top}px) rotate(20deg)`, opacity:0 }
+      ], { duration:T(450), delay:T(i*50), easing:'ease-in', fill:'forwards' }).finished;
+    }));
+  }
+  for(const id of ['dHand','pHand']){ $(id).innerHTML=''; $(id).className='hand'; }
+  setScore('pScore',''); setScore('dScore','');
+}
+
+/* ---------- Display ---------- */
+function bump(el){
+  if(RM||!el) return;
+  el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+}
+
+function setScore(id, html){
+  const el=$(id);
+  if(el.dataset.v===html) return;
+  el.dataset.v=html;
+  el.innerHTML = html ? 'Точки: '+html : '';
+  bump(el.querySelector('span'));
+}
+function updP(){ setScore('pScore', '<span>'+handScore(pHand)+'</span>'); }
+function updD(){
+  if(holeHidden) setScore('dScore', '<span>'+cardVal(dHand[0].v)+'</span>+?');
+  else setScore('dScore', '<span>'+handScore(dHand)+'</span>');
+}
+
+function setMsg(t, kind=''){
+  const el=$('msg');
+  el.textContent=t;
+  el.className='message '+kind;
+  if(!RM){ void el.offsetWidth; el.classList.add('pop'); }
+}
+
+function setBet(){ $('betAmt').textContent=bet; bump($('betAmt')); }
+
+// Counts the shown balance up/down to the real one.
+function showBalance(){
+  const el=$('bal'), from=shownBal, to=balance;
+  if(from===to) return;
+  el.classList.remove('up','down'); el.classList.add(to>from?'up':'down');
+  const id=++balAnim, start=performance.now(), dur=T(Math.min(1200, 300+Math.abs(to-from)*2));
+  function step(now){
+    if(id!==balAnim) return;
+    const k=dur ? Math.min(1,(now-start)/dur) : 1, e=1-Math.pow(1-k,3);
+    shownBal=Math.round(from+(to-from)*e);
+    el.textContent=shownBal;
+    if(k<1) requestAnimationFrame(step);
+    else setTimeout(()=>{ if(id===balAnim) el.classList.remove('up','down'); }, 400);
+  }
+  requestAnimationFrame(step);
+}
+
+function updateButtons(){
+  const b=phase==='bet', p=phase==='play';
+  $('btnDeal').disabled=!(b&&bet>0);
+  $('btnClear').disabled=!(b&&bet>0);
+  $('btnHit').disabled=!p;
+  $('btnStand').disabled=!p;
+  $('btnDouble').disabled=!(p&&pHand.length===2&&balance>=bet);
+  $('rack').classList.toggle('off', !b);
+}
+
+/* ---------- Chips ---------- */
+function center(el){ const r=el.getBoundingClientRect(); return { x:r.left+r.width/2, y:r.top+r.height/2 }; }
+function potTop(){ const c=center($('pot')); c.y-=Math.min(potChips.length,14)*3; return c; }
+
+function renderPot(){
+  const pot=$('pot'); pot.innerHTML='';
+  potChips.slice(-14).forEach((v,i)=>{
+    const c=document.createElement('div');
+    c.className='chip c'+v; c.textContent=v; c.style.top=(4-i*3)+'px';
+    pot.appendChild(c);
+  });
+}
+
+function flyChip(v, from, to, delay=0){
+  if(RM) return Promise.resolve();
+  const el=document.createElement('div');
+  el.className='chip fly c'+v; el.textContent=v;
+  el.style.left=(from.x-22)+'px'; el.style.top=(from.y-22)+'px';
+  document.body.appendChild(el);
+  const dx=to.x-from.x, dy=to.y-from.y;
+  return el.animate([
+    { transform:'translate(0,0) scale(1)' },
+    { transform:`translate(${dx/2}px,${dy/2-40}px) scale(1.15)`, offset:0.5 },
+    { transform:`translate(${dx}px,${dy}px) scale(0.95)` }
+  ], { duration:450, delay, easing:'ease-in-out', fill:'backwards' }).finished.then(()=>el.remove());
+}
+
+// Greedy breakdown of an amount into chips (capped for visuals).
+function chipsFor(a){
+  const out=[];
+  for(const v of [100,50,25,10,5]) while(a>=v && out.length<14){ out.push(v); a-=v; }
+  return out;
+}
+
+function addBet(n, chipEl){
+  if(phase!=='bet') return;
+  if(bet+n>balance){ setMsg('Недостатъчен баланс!','lose'); return; }
   bet+=n; setBet();
-  document.getElementById('btnDeal').disabled=false;
+  sfx.chip();
+  const gen=potGen;
+  flyChip(n, center(chipEl), potTop()).then(()=>{
+    if(gen!==potGen) return;
+    potChips.push(n); renderPot();
+  });
+  updateButtons();
   setMsg('Залог: '+bet+' лв. → Раздай');
 }
 
 function clearBet(){
-  if(gameOn)return;
+  if(phase!=='bet'||!bet) return;
+  const from=center($('pot'));
+  potChips.forEach((v,i)=>flyChip(v, from, center(document.querySelector('#rack .c'+v)), i*40));
+  potChips=[]; potGen++; renderPot();
   bet=0; setBet();
-  document.getElementById('btnDeal').disabled=true;
+  updateButtons();
   setMsg('Залог → Раздай');
 }
 
-function setActionBtns(on){
-  document.getElementById('btnHit').disabled=!on;
-  document.getElementById('btnStand').disabled=!on;
-  document.getElementById('btnDouble').disabled=!on;
-  document.getElementById('btnDeal').disabled=on;
-  document.getElementById('btnClear').disabled=on;
+async function settleChips(kind, win){
+  await sleep(500);
+  const dealer=center($('dHand'));
+  if(kind==='win'||kind==='bj'){
+    // Dealer pays out into the pot
+    await Promise.all(chipsFor(win-bet).map((v,i)=>flyChip(v, dealer, potTop(), i*60).then(()=>{
+      potChips.push(v); renderPot(); sfx.chip();
+    })));
+    await sleep(300);
+  }
+  const from=center($('pot')), to = kind==='lose' ? dealer : center($('bal'));
+  const chips=potChips;
+  potChips=[]; potGen++; renderPot();
+  await Promise.all(chips.map((v,i)=>flyChip(v, from, to, i*45)));
 }
 
-function deal(){
-  if(bet===0)return;
+/* ---------- Round flow ---------- */
+async function deal(){
+  if(phase!=='bet'||bet===0) return;
+  phase='busy'; updateButtons();
+  await collectCards();
   buildDeck();
-  dHand=[deck.pop(), deck.pop()];
-  pHand=[deck.pop(), deck.pop()];
-  balance-=bet; setBal();
-  gameOn=true;
-  setActionBtns(true);
-  renderHands(true);
+  dHand=[]; pHand=[];
+  balance-=bet; showBalance();
+  holeHidden=true;
+  setMsg('Раздаване...');
+  await giveP();
+  await giveD(true);
+  await giveP();
+  holeEl=await giveD(false);
   // Check BJ
   if(handScore(pHand)===21){
-    endGame(true);
+    await endGame(true);
   } else {
+    phase='play'; updateButtons();
     setMsg('Карта, Стой или Двойно?');
   }
 }
 
-function hit(){
-  pHand.push(deck.pop());
-  renderHands(true);
-  document.getElementById('btnDouble').disabled=true;
-  if(handScore(pHand)>21){ endGame(false,'bust'); }
-  else if(handScore(pHand)===21){ stand(); }
-  else setMsg('Карта или Стой?');
+async function hit(){
+  if(phase!=='play') return;
+  phase='busy'; updateButtons();
+  await giveP();
+  const s=handScore(pHand);
+  if(s>21) await endGame(false,'bust');
+  else if(s===21) await dealerTurn();
+  else { phase='play'; updateButtons(); setMsg('Карта или Стой?'); }
 }
 
-function stand(){
-  // dealer plays
-  while(handScore(dHand)<17) dHand.push(deck.pop());
-  endGame(false);
+async function stand(){
+  if(phase!=='play') return;
+  phase='busy'; updateButtons();
+  await dealerTurn();
 }
 
-function dbl(){
-  if(bet>balance){ setMsg('Недостатъчен баланс за удвояване!'); return; }
-  balance-=bet; bet*=2; setBal(); setBet();
-  pHand.push(deck.pop());
-  renderHands(true);
-  if(handScore(pHand)>21){ endGame(false,'bust'); }
-  else stand();
+async function dealerTurn(){
+  setMsg('Ход на дилъра...');
+  await reveal();
+  while(handScore(dHand)<17){ await sleep(450); await giveD(true); }
+  await sleep(300);
+  await endGame(false);
 }
 
-function endGame(checkBJ=false, reason=''){
-  gameOn=false;
-  renderHands(false);
-  setActionBtns(false);
-  document.getElementById('btnDeal').disabled=true;
+async function dbl(){
+  if(phase!=='play'||pHand.length!==2||bet>balance) return;
+  phase='busy'; updateButtons();
+  balance-=bet; showBalance();
+  const from=center($('bal')), extra=chipsFor(bet);
+  sfx.chip();
+  await Promise.all(extra.map((v,i)=>flyChip(v, from, potTop(), i*50).then(()=>{ potChips.push(v); renderPot(); })));
+  bet*=2; setBet();
+  await giveP();
+  if(handScore(pHand)>21) await endGame(false,'bust');
+  else await dealerTurn();
+}
+
+async function endGame(checkBJ=false, reason=''){
+  phase='busy'; updateButtons();
+  await reveal();
 
   const p=handScore(pHand), d=handScore(dHand);
-  let msg='', win=0;
+  const pEl=$('pHand'), dEl=$('dHand');
+  let msg='', win=0, kind='lose';
 
   if(reason==='bust'){
     msg='💥 Прегоряхте! Загуба.';
+    pEl.classList.add('shake','bust');
   } else if(checkBJ && p===21 && dHand.length===2 && handScore(dHand)===21){
     msg='🤝 Двама с Blackjack — равна!';
-    win=bet;
+    win=bet; kind='push';
   } else if(checkBJ && p===21){
     win=Math.floor(bet*2.5);
     msg='🎉 BLACKJACK! +'+win+' лв.';
+    kind='bj';
+    pEl.classList.add('glow');
+    confetti();
   } else if(d>21){
     win=bet*2;
     msg='🎊 Дилърът прегоря! +'+win+' лв.';
+    kind='win';
+    dEl.classList.add('shake','bust');
+    pEl.classList.add('glow');
   } else if(p>d){
     win=bet*2;
     msg='✅ Победа! +'+win+' лв.';
+    kind='win';
+    pEl.classList.add('glow');
   } else if(p===d){
     win=bet;
     msg='🤝 Равна — залогът се връща.';
+    kind='push';
   } else {
     msg='❌ Дилърът спечели. Загуба.';
+    dEl.classList.add('glow');
   }
 
-  balance+=win; setBal();
-  setMsg(msg);
+  sfx[kind]();
+  setMsg(msg, kind);
+  await settleChips(kind, win);
+  balance+=win; showBalance();
   bet=0; setBet();
 
   if(balance<=0){
-    setTimeout(()=>{ setMsg('Нямате баланс! Рестарт.'); balance=1000; setBal(); },1200);
+    await sleep(1200);
+    setMsg('Нямате баланс! Рестарт.');
+    balance=1000; showBalance();
+  }
+  phase='bet'; updateButtons();
+}
+
+function confetti(){
+  if(RM) return;
+  const colors=['#f5c842','#e03030','#2255cc','#228833','#8822aa','#ffffff'];
+  for(let i=0;i<90;i++){
+    const c=document.createElement('div');
+    c.className='confetti';
+    c.style.left=(Math.random()*100)+'vw';
+    c.style.background=colors[i%colors.length];
+    document.body.appendChild(c);
+    const drift=(Math.random()-0.5)*200, rot=Math.random()*720;
+    c.animate([
+      { transform:'translate(0,0) rotate(0)' },
+      { transform:`translate(${drift}px,105vh) rotate(${rot}deg)` }
+    ], { duration:1800+Math.random()*1500, delay:Math.random()*400, easing:'cubic-bezier(.25,.6,.5,1)', fill:'backwards' }).finished.then(()=>c.remove());
   }
 }
+
+$('btnSound').textContent = muted ? '🔇' : '🔊';
+updateButtons();
 </script>
 </body>
 </html>
